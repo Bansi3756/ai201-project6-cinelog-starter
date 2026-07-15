@@ -19,6 +19,7 @@ class User(db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    watchlist_entries = db.relationship("WatchlistEntry", backref="user", lazy=True,)
 
     collection_entries = db.relationship("CollectionEntry", backref="user", lazy=True)
 
@@ -29,6 +30,7 @@ class User(db.Model):
 class Film(db.Model):
     # Film IDs are UUIDs — refactored from integer in commit:
     # "refactor: migrate film IDs from integer to UUID"
+    watchlist_entries = db.relationship( "WatchlistEntry", backref="film", lazy=True, )
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     title = db.Column(db.String(200), nullable=False)
     year = db.Column(db.Integer, nullable=True)
@@ -70,4 +72,49 @@ class CollectionEntry(db.Model):
             "film_id": self.film_id,
             "date_added": self.date_added.isoformat(),
             "rating": self.rating,
+        }
+
+class WatchlistEntry(db.Model):
+    """Represents a film a user wants to watch."""
+
+    id = db.Column(
+        db.String(36),
+        primary_key=True,
+        default=generate_uuid,
+    )
+    user_id = db.Column(
+        db.String(36),
+        db.ForeignKey("user.id"),
+        nullable=False,
+    )
+    film_id = db.Column(
+        db.String(36),
+        db.ForeignKey("film.id"),
+        nullable=False,
+    )
+    date_added = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    public = db.Column(
+        db.Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id",
+            "film_id",
+            name="unique_user_film_watchlist",
+        ),
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "film_id": self.film_id,
+            "date_added": self.date_added.isoformat(),
+            "public": self.public,
         }
