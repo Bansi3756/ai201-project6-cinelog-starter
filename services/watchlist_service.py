@@ -60,7 +60,7 @@ def get_watchlist(user_id):
     entries = (
         WatchlistEntry.query
         .filter_by(user_id=user_id)
-        .order_by(WatchlistEntry.data_added.desc())
+        .order_by(WatchlistEntry.date_added.desc())
         .all()
     )
 
